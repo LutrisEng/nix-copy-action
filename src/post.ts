@@ -18,7 +18,7 @@ async function run(): Promise<void> {
     if (cacheHTTPURL !== '') {
       caches.push(cacheHTTPURL)
     } else {
-      caches.push(cacheURL.replace(/^s3\/\//, 'https://s3.amazonaws.com/'))
+      caches.push(cacheURL.replace(/^s3:\/\//, 'https://s3.amazonaws.com/'))
     }
     const cachePrivKey: string = core.getInput('cache_priv_key')
     await writeFile('/tmp/cache-priv-key.pem', cachePrivKey)
