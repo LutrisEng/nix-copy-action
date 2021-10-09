@@ -6,6 +6,25 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -19,7 +38,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.copyPathsToCache = exports.cacheHasPath = void 0;
+exports.copyPathsToCache = exports.getPathDependencies = exports.cacheHasPath = void 0;
+const core = __importStar(__nccwpck_require__(186));
 const exec_1 = __nccwpck_require__(514);
 const node_fetch_1 = __importDefault(__nccwpck_require__(990));
 function cacheHasPath(cacheURL, path) {
@@ -45,8 +65,18 @@ function cacheHasPath(cacheURL, path) {
     });
 }
 exports.cacheHasPath = cacheHasPath;
+function getPathDependencies(path) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const info = yield exec_1.getExecOutput('nix', ['path-info', '-r', path]);
+        const dependencies = info.stdout.split('\n');
+        dependencies.pop();
+        return dependencies;
+    });
+}
+exports.getPathDependencies = getPathDependencies;
 function copyPathsToCache(cacheURL, paths) {
     return __awaiter(this, void 0, void 0, function* () {
+        core.debug(`Signing then copying ${JSON.stringify(paths)}`);
         yield exec_1.exec('nix', [
             'store',
             'sign',
@@ -152,12 +182,36 @@ function run() {
                 const cacheStatus = results.reduce((a, b) => a || b, false);
                 return { path, cacheStatus };
             })));
-            const newUncachedFiles = newFilesWithCacheStatus
-                .filter(x => !x.cacheStatus)
-                .map(x => x.path);
-            core.info(`Copying ${newUncachedFiles.length} paths to the cache...`);
-            const chunkedNewUncachedFiles = chunk_1.default(newUncachedFiles, 48);
-            yield Promise.all(chunkedNewUncachedFiles.map((thisChunk) => __awaiter(this, void 0, void 0, function* () { return yield cache_1.copyPathsToCache(cacheURL, thisChunk); })));
+            const newFilesWithDependencies = yield Promise.all(newFilesWithCacheStatus.map((x) => __awaiter(this, void 0, void 0, function* () {
+                return (Object.assign(Object.assign({}, x), { dependencyPaths: yield cache_1.getPathDependencies(x.path) }));
+            })));
+            const fileMap = new Map();
+            for (const file of newFilesWithDependencies) {
+                fileMap.set(file.path, file);
+            }
+            const fileGraph = newFilesWithDependencies.map(x => (Object.assign(Object.assign({}, x), { dependencies: x.dependencyPaths
+                    .filter(path => fileMap.has(path))
+                    .map(path => fileMap.get(path)) })));
+            const noDependencies = fileGraph.filter(x => x.dependencies.length === 0);
+            const copied = new Set();
+            let remaining = noDependencies;
+            while (remaining.length > 0) {
+                for (const file of remaining) {
+                    copied.add(file.path);
+                }
+                const chunked = chunk_1.default(remaining, 48);
+                yield Promise.all(chunked.map((thisChunk) => __awaiter(this, void 0, void 0, function* () {
+                    return yield cache_1.copyPathsToCache(cacheURL, thisChunk.map(file => file.path));
+                })));
+                remaining = [];
+                for (const file of remaining) {
+                    for (const dependency of file.dependencies) {
+                        if (!copied.has(dependency.path)) {
+                            remaining.push(dependency);
+                        }
+                    }
+                }
+            }
         }
         catch (error) {
             core.setFailed(error.message);

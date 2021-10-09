@@ -1,4 +1,5 @@
-import {exec} from '@actions/exec'
+import * as core from '@actions/core'
+import {exec, getExecOutput} from '@actions/exec'
 import fetch from 'node-fetch'
 
 export async function cacheHasPath(
@@ -27,10 +28,18 @@ export async function cacheHasPath(
   }
 }
 
+export async function getPathDependencies(path: string): Promise<string[]> {
+  const info = await getExecOutput('nix', ['path-info', '-r', path])
+  const dependencies = info.stdout.split('\n')
+  dependencies.pop()
+  return dependencies
+}
+
 export async function copyPathsToCache(
   cacheURL: string,
   paths: string[]
 ): Promise<void> {
+  core.debug(`Signing then copying ${JSON.stringify(paths)}`)
   await exec('nix', [
     'store',
     'sign',
