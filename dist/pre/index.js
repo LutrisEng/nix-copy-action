@@ -52,20 +52,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
-const promises_1 = __nccwpck_require__(225);
+const fs = __importStar(__nccwpck_require__(747));
+const util_1 = __nccwpck_require__(669);
 const interesting_1 = __nccwpck_require__(764);
+const readdir = util_1.promisify(fs.readdir);
+const writeFile = util_1.promisify(fs.writeFile);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const files = yield promises_1.readdir('/nix/store');
+            const files = yield readdir('/nix/store');
             const interestingFiles = files
                 .filter(interesting_1.isInteresting)
                 .map(x => `/nix/store/${x}`);
-            const list = yield promises_1.open('/tmp/store-path-pre-build', 'w');
-            for (const file of interestingFiles) {
-                yield list.write(`${file}\n`);
-            }
-            yield list.close();
+            yield writeFile('/tmp/store-path-pre-build', interestingFiles.join('\n'));
         }
         catch (error) {
             core.setFailed(error.message);
@@ -556,13 +555,6 @@ module.exports = require("fs");
 
 /***/ }),
 
-/***/ 225:
-/***/ ((module) => {
-
-module.exports = require("fs/promises");
-
-/***/ }),
-
 /***/ 87:
 /***/ ((module) => {
 
@@ -574,6 +566,13 @@ module.exports = require("os");
 /***/ ((module) => {
 
 module.exports = require("path");
+
+/***/ }),
+
+/***/ 669:
+/***/ ((module) => {
+
+module.exports = require("util");
 
 /***/ })
 

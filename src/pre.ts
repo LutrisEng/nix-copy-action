@@ -1,6 +1,10 @@
 import * as core from '@actions/core'
-import {readdir, open} from 'fs/promises'
+import * as fs from 'fs'
+import {promisify} from 'util'
 import {isInteresting} from './interesting'
+
+const readdir = promisify(fs.readdir)
+const writeFile = promisify(fs.writeFile)
 
 async function run(): Promise<void> {
   try {
@@ -8,11 +12,7 @@ async function run(): Promise<void> {
     const interestingFiles = files
       .filter(isInteresting)
       .map(x => `/nix/store/${x}`)
-    const list = await open('/tmp/store-path-pre-build', 'w')
-    for (const file of interestingFiles) {
-      await list.write(`${file}\n`)
-    }
-    await list.close()
+    await writeFile('/tmp/store-path-pre-build', interestingFiles.join('\n'))
   } catch (error) {
     core.setFailed((error as {message: string}).message)
   }

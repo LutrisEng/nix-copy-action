@@ -1,9 +1,14 @@
 import * as core from '@actions/core'
-import {readdir, readFile, writeFile} from 'fs/promises'
+import * as fs from 'fs'
 import chunk from 'lodash/chunk'
+import {promisify} from 'util'
 import {cacheHasPath, copyPathsToCache} from './cache'
 import {isInteresting} from './interesting'
 import {difference} from './set'
+
+const readdir = promisify(fs.readdir)
+const readFile = promisify(fs.readFile)
+const writeFile = promisify(fs.writeFile)
 
 async function run(): Promise<void> {
   try {

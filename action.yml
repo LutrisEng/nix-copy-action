@@ -18,6 +18,6 @@ inputs:
     required: false
     description: 'Your AWS secret access key'
 runs:
-  using: 'node14'
+  using: 'node12'
   main: 'dist/pre/index.js'
   post: 'dist/post/index.js'

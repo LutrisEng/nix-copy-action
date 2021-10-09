@@ -117,11 +117,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
-const promises_1 = __nccwpck_require__(225);
+const fs = __importStar(__nccwpck_require__(747));
 const chunk_1 = __importDefault(__nccwpck_require__(908));
+const util_1 = __nccwpck_require__(669);
 const cache_1 = __nccwpck_require__(782);
 const interesting_1 = __nccwpck_require__(764);
 const set_1 = __nccwpck_require__(741);
+const readdir = util_1.promisify(fs.readdir);
+const readFile = util_1.promisify(fs.readFile);
+const writeFile = util_1.promisify(fs.writeFile);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -132,14 +136,14 @@ function run() {
                 caches.push(cacheHTTPURL);
             }
             const cachePrivKey = core.getInput('cache_priv_key');
-            yield promises_1.writeFile('/tmp/cache-priv-key.pem', cachePrivKey);
+            yield writeFile('/tmp/cache-priv-key.pem', cachePrivKey);
             const awsAccessKeyId = core.getInput('aws_access_key_id');
             process.env.AWS_ACCESS_KEY_ID = awsAccessKeyId;
             const awsSecretAccessKey = core.getInput('aws_secret_access_key');
             process.env.AWS_SECRET_ACCESS_KEY = awsSecretAccessKey;
-            const files = yield promises_1.readdir('/nix/store');
+            const files = yield readdir('/nix/store');
             const interestingFiles = new Set(files.filter(interesting_1.isInteresting).map(x => `/nix/store/${x}`));
-            const existingFiles = new Set((yield promises_1.readFile('/tmp/store-path-pre-build'))
+            const existingFiles = new Set((yield readFile('/tmp/store-path-pre-build'))
                 .toString('utf-8')
                 .split('\n'));
             const newFiles = set_1.difference(interestingFiles, existingFiles);
@@ -8935,14 +8939,6 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
-
-/***/ }),
-
-/***/ 225:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("fs/promises");
 
 /***/ }),
 
