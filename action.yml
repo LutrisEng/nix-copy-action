@@ -1,11 +1,23 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Copy Nix store paths'
+description: 'cachix/cachix-action for S3'
+author: 'Lutris'
 inputs:
-  milliseconds: # change this
+  cache_url:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'The URL for your binary cache (e.g. s3://nix-cache.piperswe.me)'
+  cache_http_url:
+    required: false
+    description: 'An HTTP URL for your binary cache, used by clients (e.g. https://nix-cache.piperswe.me'
+  cache_priv_key:
+    required: true
+    description: 'The private key used to sign uploads to your binary cache'
+  aws_access_key_id:
+    required: false
+    description: 'Your AWS access key ID'
+  aws_secret_access_key:
+    required: false
+    description: 'Your AWS secret access key'
 runs:
   using: 'node12'
-  main: 'dist/index.js'
+  main: 'dist/pre.js'
+  post: 'dist/post.js'
