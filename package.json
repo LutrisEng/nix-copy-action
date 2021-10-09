@@ -9,7 +9,7 @@
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build lib/pre.js --source-map --license licenses.txt -o dist/pre && ncc build lib/post.js --source-map --license licenses.txt -o dist/post",
+    "package": "ncc build lib/pre.js --source-map --license licenses.txt -o dist/pre -e fs/promises && ncc build lib/post.js --source-map --license licenses.txt -o dist/post -e fs/promises",
     "test": "jest",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
