@@ -29,7 +29,7 @@ function cacheHasPath(cacheURL, path) {
             throw new Error(`Store path ${path} must start with /nix/store/, then have a 32-character hash.`);
         }
         const hash = hashRegexResults[1];
-        const url = `${cacheURL.replace(/^s3/, 'https')}/${hash}.narinfo`;
+        const url = `${cacheURL}/${hash}.narinfo`;
         const res = yield node_fetch_1.default(url, {
             method: 'HEAD'
         });
@@ -134,6 +134,9 @@ function run() {
             const caches = ['https://cache.nixos.org'];
             if (cacheHTTPURL !== '') {
                 caches.push(cacheHTTPURL);
+            }
+            else {
+                caches.push(cacheURL.replace(/^s3\/\//, 'https://s3.amazonaws.com/'));
             }
             const cachePrivKey = core.getInput('cache_priv_key');
             yield writeFile('/tmp/cache-priv-key.pem', cachePrivKey);
