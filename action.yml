@@ -19,5 +19,5 @@ inputs:
     description: 'Your AWS secret access key'
 runs:
   using: 'node12'
-  main: 'dist/pre.js'
-  post: 'dist/post.js'
+  main: 'dist/pre/index.js'
+  post: 'dist/post/index.js'
