@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import chunk from 'lodash/chunk'
 import {promisify} from 'util'
-import {cacheHasPath, copyPathsToCache, getPathDependencies} from './cache'
+import {cacheHasPath, copyPathsToCache} from './cache'
 import {isInteresting} from './interesting'
 import {difference} from './set'
 
@@ -44,50 +44,17 @@ async function run(): Promise<void> {
         return {path, cacheStatus}
       })
     )
+    const newUncachedFiles = newFilesWithCacheStatus
+      .filter(x => !x.cacheStatus)
+      .map(x => x.path)
 
-    const newFilesWithDependencies = await Promise.all(
-      newFilesWithCacheStatus.map(async x => ({
-        ...x,
-        dependencyPaths: await getPathDependencies(x.path)
-      }))
-    )
-
-    const fileMap = new Map()
-    for (const file of newFilesWithDependencies) {
-      fileMap.set(file.path, file)
-    }
-    const fileGraph = newFilesWithDependencies.map(x => ({
-      ...x,
-      dependencies: x.dependencyPaths
-        .filter(path => fileMap.has(path))
-        .map(path => fileMap.get(path))
-    }))
-    const noDependencies = fileGraph.filter(x => x.dependencies.length === 0)
-    const copied = new Set()
-    let remaining = noDependencies
-    while (remaining.length > 0) {
-      for (const file of remaining) {
-        copied.add(file.path)
-      }
-      const chunked = chunk(remaining, 48)
-      await Promise.all(
-        chunked.map(
-          async thisChunk =>
-            await copyPathsToCache(
-              cacheURL,
-              thisChunk.map(file => file.path)
-            )
-        )
+    core.info(`Copying ${newUncachedFiles.length} paths to the cache...`)
+    const chunkedNewUncachedFiles = chunk(newUncachedFiles, 48)
+    await Promise.all(
+      chunkedNewUncachedFiles.map(
+        async thisChunk => await copyPathsToCache(cacheURL, thisChunk)
       )
-      remaining = []
-      for (const file of remaining) {
-        for (const dependency of file.dependencies) {
-          if (!copied.has(dependency.path)) {
-            remaining.push(dependency)
-          }
-        }
-      }
-    }
+    )
   } catch (error) {
     core.setFailed((error as {message: string}).message)
   }
