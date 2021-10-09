@@ -29,7 +29,7 @@ function cacheHasPath(cacheURL, path) {
             throw new Error(`Store path ${path} must start with /nix/store/, then have a 32-character hash.`);
         }
         const hash = hashRegexResults[1];
-        const url = `${cacheURL}/${hash}.narinfo`;
+        const url = `${cacheURL.replace(/^s3/, 'https')}/${hash}.narinfo`;
         const res = yield node_fetch_1.default(url, {
             method: 'HEAD'
         });
