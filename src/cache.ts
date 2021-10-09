@@ -12,7 +12,7 @@ export async function cacheHasPath(
     )
   }
   const hash = hashRegexResults[1]
-  const url = `${cacheURL.replace(/^s3/, 'https')}/${hash}.narinfo`
+  const url = `${cacheURL}/${hash}.narinfo`
   const res = await fetch(url, {
     method: 'HEAD'
   })
